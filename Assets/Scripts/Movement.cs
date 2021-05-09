@@ -45,29 +45,29 @@ public class Movement : MonoBehaviour, IPunObservable
         spriteRenderer = GetComponent<SpriteRenderer>();
         // gameObject.name = nam;
         firstplat = mapcontroller.Instance.platforms[(int)gameObject.transform.position.x, (int)gameObject.transform.position.y];
-        FindObjectOfType<mapcontroller>().addPlayer(gameObject.GetComponent<Movement>());
-
-     //   TMP_Text t = gameObject.GetComponentInChildren<TMP_Text>();
-     //   t.text = PhotonNetwork.PlayerList[0].NickName;
-     //   name = t.text;
+    //    FindObjectOfType<mapcontroller>().addPlayer(gameObject.GetComponent<Movement>());
+        gameObject.GetComponentInChildren<TMP_Text>().SetText(photon.Owner.NickName);
+        gameObject.name = photon.Owner.NickName;
+        mapcontroller.Instance.players.Add(this.gameObject);
+        if (mapcontroller.Instance.players.Count == 2) { mapcontroller.Instance.ready = true; }
+        //   TMP_Text t = gameObject.GetComponentInChildren<TMP_Text>();
+        //   t.text = PhotonNetwork.PlayerList[0].NickName;
+        //   name = t.text;
     }
 
-    public void Name(string nam)
-    {
-        TMP_Text t = gameObject.GetComponentInChildren<TMP_Text>();
-        t.text = nam;
-    }
+    
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            stream.SendNext(isRed);
+           stream.SendNext(gameObject.GetComponent<BoxCollider2D>().enabled);
+            
         //    stream.SendNext(name);
             //  stream.SendNext(nam);
         }
         else
         {
-            isRed = (bool)stream.ReceiveNext();
+         gameObject.GetComponent<BoxCollider2D>().enabled = (bool)stream.ReceiveNext();
           //  name = (string)stream.ReceiveNext();
             // nam = (string)stream.ReceiveNext();
         }

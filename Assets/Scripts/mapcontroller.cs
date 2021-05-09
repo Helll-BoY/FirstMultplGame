@@ -2,14 +2,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using Photon.Chat;
 using Photon.Realtime;
-public class mapcontroller : MonoBehaviourPunCallbacks
+using ExitGames.Client.Photon;
+using System.Linq;
+
+public enum PhotonEventCodes
+{
+    DestroyPlatform = 10,
+    DieNorm = 20,
+        Dielol = 30
+}
+public class mapcontroller : MonoBehaviourPunCallbacks, IOnEventCallback
 {
     public static mapcontroller Instance;
-    public List<Movement> players = new List<Movement>();
-   // public List<GameObject> firstplatforms = new List<GameObject>();
+    public List<GameObject> players = new List<GameObject>();
+    public PhotonView view;
     public GameObject first;
-    public ExitGames.Client.Photon.Hashtable hash = new ExitGames.Client.Photon.Hashtable();
+  //  public  hash = new ExitGames.Client.Photon.Hashtable();
     public GameObject second;
     public byte x = 0;
     public byte y = 0;
@@ -20,9 +30,11 @@ public class mapcontroller : MonoBehaviourPunCallbacks
     public SpriteRenderer[,] platform_sprites;
     public bool ready = false;
     public bool rivok = true;
-
+    public const byte DestroyPlatCode = 10;
+    public const byte Die = 20;
     public GameObject platformPrefab;
     public GameObject[,] platforms;
+    public RaiseEventOptions opt;
     private void Awake()
     {
         Instance = this;
@@ -30,7 +42,11 @@ public class mapcontroller : MonoBehaviourPunCallbacks
     }
     void Start()
     {
-        
+        view = GetComponent<PhotonView>();
+        opt = new RaiseEventOptions
+        {
+            Receivers = ReceiverGroup.All
+        };
        
         platforms = new GameObject[10, 10];
        // check = new List<SpriteRenderer>();
@@ -49,7 +65,7 @@ public class mapcontroller : MonoBehaviourPunCallbacks
             }
         }
     }
-    public override void OnRoomPropertiesUpdate(ExitGames.Client.Photon.Hashtable propertiesThatChanged)
+    /*public override void OnRoomPropertiesUpdate(ExitGames.Client.Photon.Hashtable propertiesThatChanged)
     {
         
        
@@ -65,74 +81,153 @@ public class mapcontroller : MonoBehaviourPunCallbacks
         }
        
     }
-    
+    */
 
 
 
     
-    public void CheckForPlat()
+   
+  // public override void 
+
+   void Update()
     {
-        if (players[0] != null)
+        if(players.Count == 2)
         {
-            first = players[0].firstplat;
+            players.OrderBy(pl => pl.GetPhotonView());
         }
-      //  Debug.Log(players.Count);
-        if ( players.Count == 2 && players[1] != null )
-        {
-            second = players[1].firstplat;
-            ready = true;
-        }
-       
-           
-        
+    }
+    private void OnEnable()
+    {
+        PhotonNetwork.AddCallbackTarget(this);
     }
 
-    void Update() {
-      //  Debug.Log(PhotonNetwork.CurrentRoom.CustomProperties);
+    private void OnDisable()
+    {
+       
+        PhotonNetwork.RemoveCallbackTarget(this);
     }
+    public void OnEvent(EventData photonEvent)
+    {
+       // Debug.Log("event");
+        byte eventCODE = photonEvent.Code;
+        if(eventCODE == (byte)PhotonEventCodes.DestroyPlatform)
+        {
+          //  Debug.Log("eventdone");
+            object[] data = (object[])photonEvent.CustomData;
+                int x = (byte)data[1];
+                int y = (byte)data[2];
+            // GameObject g = (b)data[0];
+            //  Debug.Log(x+" "+ y);
+            platforms[x, y].GetComponent<SpriteRenderer>().enabled = false;
+        }
+        if(eventCODE == (byte)PhotonEventCodes.DieNorm)
+        {
+        
+           string[] data = (string[])photonEvent.CustomData;
+         string xx = data[0];
+            for(int i = 0; i < players.Count;i++)
+            {
+                if(players[i].name == xx) { players[i].SetActive(false); }
+            }
+        
+        }
+        if (eventCODE == (byte)PhotonEventCodes.Dielol)
+        {
+
+            int[] data = (int[])photonEvent.CustomData;
+            int xx = data[0];
+
+            players[xx].SetActive(false);
+            
+
+        }
+
+    }
+
     public IEnumerator DestroyPlatform(GameObject g, GameObject gg)
     {
-       
-        yield return new WaitForSeconds(1);
-
-        gg.GetComponent<SpriteRenderer>().enabled = false;
-      
-       for(int i = 0; i < 10; i++)
+       // if (!PhotonNetwork.IsMasterClient) {yield return null; }
+       if (PhotonNetwork.IsMasterClient)
         {
-            for (int j = 0; j < 10; j++)
+            yield return new WaitForSeconds(1);
+          
+           // gg.GetComponent<SpriteRenderer>().enabled = false;
+            for (int i = 0; i < 10; i++)
             {
-                if(gg == platforms[i,j] && gg.GetComponent<SpriteRenderer>().enabled == false)
-
+                for (int j = 0; j < 10; j++)
                 {
-                    x = (byte)i;
-                    y = (byte)j;
-                  
-                 
-                    hash.Add(x+""+y, gg.GetComponent<SpriteRenderer>());
-              //      PhotonNetwork.CurrentRoom.SetCustomProperties(hash);
-                    OnRoomPropertiesUpdate(hash);
-                    _Keys.Add(x+""+y);
-                    _Values.Add(gg.GetComponent<SpriteRenderer>());
+                    if (gg == platforms[i, j] )
+
+                    {
+                        x = (byte)i;
+                        y = (byte)j;
+                        _Keys.Add(x + "" + y);
+                        _Values.Add(gg.GetComponent<SpriteRenderer>());
+                    }
                 }
             }
-        }
-        yield return new WaitForSeconds(0.2f);
+             //    Debug.Log(opt.Receivers);
+            
+            object[] datas = new object[] { gg.GetComponent<SpriteRenderer>().enabled, x,y };
+     //       Debug.Log(datas[0]+ "" + datas[1] + "" + datas[2]);
+            PhotonNetwork.RaiseEvent((byte)PhotonEventCodes.DestroyPlatform, datas, opt, ExitGames.Client.Photon.SendOptions.SendUnreliable);
+            
+           
+            yield return new WaitForSeconds(0.2f);
 
-        if (gg.GetComponent<BoxCollider2D>().IsTouching(g.GetComponent<BoxCollider2D>()) == true)
+            if (gg.GetComponent<BoxCollider2D>().IsTouching(g.GetComponent<BoxCollider2D>()) == true)
+            {
+                g.SetActive(false);
+            }
+       }
+
+    }
+
+    public IEnumerator dieplayer(GameObject g)
+    {
+        if (PhotonNetwork.IsMasterClient)
         {
-            g.SetActive(false);
+          //  Debug.Log(g);
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (players[i] == g)
+                {
+                    string[] datas = new string[] { players[i].name };
+                   
+                    PhotonNetwork.RaiseEvent((byte)PhotonEventCodes.DieNorm, datas, opt, ExitGames.Client.Photon.SendOptions.SendUnreliable);
+                }
+            }
+
+            yield return null;
+        }
+        
+    }
+
+    public IEnumerator dieagain(int g)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            //  Debug.Log(g);
+           
+                    int[] datas = new int[] { g };
+
+                    PhotonNetwork.RaiseEvent((byte)PhotonEventCodes.Dielol, datas, opt, ExitGames.Client.Photon.SendOptions.SendUnreliable);
+           
+
+            yield return null;
         }
 
     }
-    public void addPlayer(Movement m)
-    {
-         players.Add(m);
-        
-       CheckForPlat();
-    }
+    /* public void addPlayer(Movement m)
+     {
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        
-    }
+          players.Add(m);
+
+        CheckForPlat();
+     }*/
+
+
+
+
+
 }

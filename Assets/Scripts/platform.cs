@@ -10,6 +10,22 @@ public class platform : MonoBehaviour
     {
         
     }
+    void Update()
+    {
+       if (mapcontroller.Instance.players.Count == 2)
+        {
+
+
+            if (gameObject.GetComponent<SpriteRenderer>().enabled == false && gameObject.GetComponent<BoxCollider2D>().IsTouching(mapcontroller.Instance.players[0].GetComponent<BoxCollider2D>()))
+            {
+                StartCoroutine(mapcontroller.Instance.dieagain(0));
+            }
+            if (gameObject.GetComponent<SpriteRenderer>().enabled == false &&  gameObject.GetComponent<BoxCollider2D>().IsTouching(mapcontroller.Instance.players[1].GetComponent<BoxCollider2D>()))
+            {
+               StartCoroutine(mapcontroller.Instance.dieagain(1));
+            }
+        }
+    }
 
     public void OnTriggerEnter2D(Collider2D coll)
     {
@@ -18,16 +34,17 @@ public class platform : MonoBehaviour
             currentg = gameObject;
             if (gameObject.GetComponent<SpriteRenderer>().enabled == false)
             {
-                coll.gameObject.SetActive(false);
-            }
+            StartCoroutine(mapcontroller.Instance.dieplayer(coll.gameObject));
+           Debug.Log(1);
+        }
          //   Debug.Log(coll.name);
 
             if (gameObject != mapcontroller.Instance.first && gameObject != mapcontroller.Instance.second && mapcontroller.Instance.ready == true)
             {
          
-                //mapcontroller.Instance.StartCoroutine(DestroyPlatform( coll.gameObject, currentg));
+                
                 StartCoroutine(mapcontroller.Instance.DestroyPlatform(coll.gameObject, currentg));
-                //StartCoroutine(DestroyPlatform(coll.gameObject, currentg));
+               
                 
                 mapcontroller.Instance.first = null;
                 mapcontroller.Instance.second = null;
@@ -35,12 +52,11 @@ public class platform : MonoBehaviour
       //  }
      
     }
-    void Update()
-    {
-
-    }
-
    
+   public void OnTriggerStay2D(Collider2D coll)
+    {
+    //    if (gameObject.GetComponent<SpriteRenderer>().enabled == false) { StartCoroutine(mapcontroller.Instance.dieagain(1)); }
+    }
    
 
    /* public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)

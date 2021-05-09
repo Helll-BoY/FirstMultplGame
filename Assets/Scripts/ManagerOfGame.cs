@@ -58,7 +58,7 @@ public class ManagerOfGame : MonoBehaviourPunCallbacks
             PhotonNetwork.Instantiate(PlayerPrefab1.name, pos, Quaternion.identity);
    
        
-        StartCoroutine(Nam( PhotonNetwork.PlayerList[ii].NickName, ii));
+       
     }
 
     
@@ -81,19 +81,10 @@ public class ManagerOfGame : MonoBehaviourPunCallbacks
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        // Debug.LogFormat("Player {0} entered room" ,  newPlayer.NickName);
-        ii++;
-      
-       StartCoroutine(Nam(PhotonNetwork.PlayerList[ii].NickName,ii));
-        //mapcontroller.Instance.players[ii].GetComponent<Movement>().Name(newPlayer.NickName);
+       
         
     }
-    public IEnumerator Nam(string na, int index)
-    {
-        yield return new WaitForSeconds(3);
-        mapcontroller.Instance.players[index].GetComponentInChildren<TMP_Text>().text = na;
-        mapcontroller.Instance.players[index].name = na;
-    }
+   
     public override void OnPlayerLeftRoom(Player otherPlayer)
     {
      //   Debug.LogFormat("Player {0} left room", otherPlayer.NickName);
